@@ -38,16 +38,18 @@ COLUMN_CLASSES = []
 STRPTIME_PLACEHOLDERS = {
     'year': ('%y', '%Y'),
     'month': ('%m', '%b', '%B'),
-    'day': ('%d',),# '%a', '%A'),  # day names are hard because they depend on other date info
+    'day': ('%d',),  # '%a', '%A'),  # day names are hard because they depend on other date info
     'hour': ('%H', '%I'),
     'minute': ('%M',),
     'second': ('%S',),
     'week_day': ('%w',),
 }
 
+
 def register_simple_modelfield(model_field):
     column_class = get_column_for_modelfield(model_field)
     COLUMN_CLASSES.insert(0, (column_class, [model_field]))
+
 
 def get_column_for_modelfield(model_field):
     """ Return the built-in Column class for a model field class. """
@@ -56,11 +58,13 @@ def get_column_for_modelfield(model_field):
     # that as the real field.  It is possible that a ForeignKey points to a model with table
     # inheritance, however, so we need to traverse the internal OneToOneField as well, so this will
     # climb the 'pk' field chain until we have something real.
-    while model_field.rel:
-        model_field = model_field.rel.to._meta.pk
+    while model_field.remote_field:
+        # model_field = model_field.remote_field.to._meta.pk
+        model_field = model_field.remote_field.model._meta.pk
     for ColumnClass, modelfield_classes in COLUMN_CLASSES:
         if isinstance(model_field, tuple(modelfield_classes)):
             return ColumnClass
+
 
 def get_attribute_value(obj, bit):
     try:
@@ -72,6 +76,7 @@ def get_attribute_value(obj, bit):
             if not hasattr(value, 'alters_data') or value.alters_data is not True:
                 value = value()
     return value
+
 
 class ColumnMetaclass(type):
     """ Column type for automatic registration of column types as ModelField handlers. """
@@ -447,6 +452,8 @@ class DateColumn(Column):
             except TypeError:
                 # Failed conversions can lead to the parser adding ints to None.
                 pass
+            except OverflowError:
+                pass
             else:
                 return date_obj
 
@@ -501,6 +508,7 @@ class BooleanColumn(Column):
         else:
             return None
         return super(BooleanColumn, self).prep_search_value(term, lookup_type)
+
 
 class IntegerColumn(Column):
     model_field_class = models.IntegerField

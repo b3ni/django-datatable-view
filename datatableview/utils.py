@@ -60,6 +60,7 @@ XEDITABLE_FIELD_TYPES = {
     'ForeignKey': 'select',
 }
 
+
 def resolve_orm_path(model, orm_path):
     """
     Follows the queryset-style query path of ``orm_path`` starting from ``model`` class.  If the
@@ -75,6 +76,7 @@ def resolve_orm_path(model, orm_path):
     else:
         field, _ = get_field(endpoint_model._meta, bits[-1])
     return field
+
 
 def get_model_at_related_field(model, attr):
     """
@@ -96,14 +98,15 @@ def get_model_at_related_field(model, attr):
             # -- Django <1.8 mode
             return field.model
 
-    if hasattr(field, 'rel') and field.rel:  # Forward/m2m relationship
-        return field.rel.to
+    if hasattr(field, 'remote_field') and field.remote_field:  # Forward/m2m relationship
+        return field.remote_field.model
 
     if hasattr(field, 'field'):  # Forward GenericForeignKey in Django 1.6+
-        return field.field.rel.to
+        return field.field.remote_field.model
 
     raise ValueError("{0}.{1} ({2}) is not a relationship field.".format(model.__name__, attr,
                                                                          field.__class__.__name__))
+
 
 def get_first_orm_bit(column):
     """ Returns the first ORM path component of a field definition's declared db field. """
@@ -111,6 +114,7 @@ def get_first_orm_bit(column):
         return None
 
     return column.sources[0].split('__')[0]
+
 
 def contains_plural_field(model, fields):
     """ Returns a boolean indicating if ``fields`` contains a relationship to multiple items. """
@@ -127,6 +131,6 @@ def contains_plural_field(model, fields):
             model = get_model_at_related_field(model, bit)
     return False
 
+
 def split_terms(s):
     return filter(None, map(lambda t: t.strip("'\" "), smart_split(s)))
-

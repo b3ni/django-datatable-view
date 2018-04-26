@@ -31,6 +31,7 @@ from .utils import (OPTION_NAME_MAP, MINIMUM_PAGE_LENGTH, contains_plural_field,
                     resolve_orm_path)
 from .cache import DEFAULT_CACHE_TYPE, cache_types, get_cache_key, cache_data, get_cached_data
 
+
 def pretty_name(name):
     if not name:
         return ''
@@ -82,6 +83,8 @@ def columns_for_model(model, fields=None, exclude=None, labels=None, processors=
     return field_dict
 
 # Borrowed from the Django forms implementation
+
+
 def get_declared_columns(bases, attrs, with_base_columns=True):
     """
     Create a list of form field instances from the passed in 'attrs', plus any
@@ -94,9 +97,9 @@ def get_declared_columns(bases, attrs, with_base_columns=True):
     Also integrates any additional media definitions
     """
     local_columns = [
-        (column_name, attrs.pop(column_name)) \
-                for column_name, obj in list(six.iteritems(attrs)) \
-                if isinstance(obj, Column)
+        (column_name, attrs.pop(column_name))
+        for column_name, obj in list(six.iteritems(attrs))
+        if isinstance(obj, Column)
     ]
     local_columns.sort(key=lambda x: x[1].creation_counter)
 
@@ -114,11 +117,13 @@ def get_declared_columns(bases, attrs, with_base_columns=True):
 
     return OrderedDict(local_columns)
 
+
 class DatatableOptions(object):
     """
     Contains declarable options for a datatable, some of which can be manipuated by subsequent
     requests by the user.
     """
+
     def __init__(self, options=None):
         # Non-mutable; server's declared preference is final
         self.model = getattr(options, 'model', None)
@@ -144,6 +149,7 @@ class DatatableOptions(object):
 
 
 default_options = DatatableOptions()
+
 
 class DatatableMetaclass(type):
     """
@@ -416,8 +422,6 @@ class Datatable(six.with_metaclass(DatatableMetaclass)):
         if self.config['ordering'] is None:
             return [], []
 
-        db_fields = []
-        virtual_fields = []
         i = 0
         for i, name in enumerate(self.config['ordering']):
             if name[0] in '+-':
@@ -543,7 +547,6 @@ class Datatable(six.with_metaclass(DatatableMetaclass)):
         # Create the simplest reproducable query for repeated operations between requests
         # Note that 'queryset' cache_type is unhandled so that it passes straight through.
         if cache_type == cache_types.PK_LIST:
-            model = object_list.model
             data = tuple(object_list.values_list('pk', flat=True))
 
         # Objects in some other type of data structure should be pickable for cache backend
@@ -680,7 +683,7 @@ class Datatable(six.with_metaclass(DatatableMetaclass)):
         for term in self.config['search']:
             # NOTE: Allow global terms to overwrite identical queries that were single-column
             searches[term] = self.columns.copy()
-            searches[term].update({None: column for column in self.config['search_fields']})
+            searches[term].update({';'.join(column.sources): column for column in self.config['search_fields']})
 
         for term in searches.keys():
             term_queries = []
@@ -754,6 +757,7 @@ class Datatable(six.with_metaclass(DatatableMetaclass)):
 
     def force_distinct(self, object_list):
         seen = set()
+
         def is_unseen(obj):
             if obj.pk in seen:
                 return False
@@ -897,7 +901,6 @@ class Datatable(six.with_metaclass(DatatableMetaclass)):
 
         return None
 
-
     # Template rendering features
     def __str__(self):
         """ Renders ``structure_template`` with ``self`` as a context variable. """
@@ -932,6 +935,7 @@ class ValuesDatatable(Datatable):
     Processor callbacks will no longer receive model instances, but instead the dict of selected
     values.
     """
+
     def get_valuesqueryset(self, queryset):
         # Figure out the full list of ORM path names
         self.value_queries = OrderedDict({'pk': 'pk'})
