@@ -130,6 +130,7 @@ class Column(six.with_metaclass(ColumnMetaclass)):
         self.processor = processor
         self.allow_regex = allow_regex
         self.allow_full_text_search = allow_full_text_search
+        self.extra_attrs = None
 
         if not self.sources:
             self.sortable = False
@@ -420,6 +421,9 @@ class Column(six.with_metaclass(ColumnMetaclass)):
                 self.index,
                 self.sort_direction,
             ]))
+
+        if self.extra_attrs:
+            attributes.update(self.extra_attrs)
 
         return flatatt(attributes)
 

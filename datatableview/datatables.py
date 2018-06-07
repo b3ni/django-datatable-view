@@ -40,7 +40,7 @@ def pretty_name(name):
 
 # Borrowed from the Django forms implementation
 def columns_for_model(model, fields=None, exclude=None, labels=None, processors=None,
-                      unsortable=None, hidden=None):
+                      unsortable=None, hidden=None, extra_attrs=None):
     field_list = []
     opts = model._meta
     for f in sorted(opts.fields):
@@ -72,6 +72,7 @@ def columns_for_model(model, fields=None, exclude=None, labels=None, processors=
         column = column_class(sources=[f.name], label=label, processor=processor, sortable=sortable,
                               visible=visible)
         column.name = f.name
+        column.extra_attrs = extra_attrs.get(f.name, {}) if isinstance(extra_attrs, dict) else None
         field_list.append((f.name, column))
 
     field_dict = OrderedDict(field_list)
@@ -128,6 +129,7 @@ class DatatableOptions(object):
         # Non-mutable; server's declared preference is final
         self.model = getattr(options, 'model', None)
         self.columns = getattr(options, 'columns', None)  # table headers
+        self.columns_attrs = getattr(options, 'columns_attrs', None)  # table headers extra attributes
         self.exclude = getattr(options, 'exclude', None)
         self.search_fields = getattr(options, 'search_fields', None)  # extra searchable ORM fields
         self.unsortable_columns = getattr(options, 'unsortable_columns', None)
@@ -166,12 +168,15 @@ class DatatableMetaclass(type):
         opts = new_class._meta = new_class.options_class(getattr(new_class, 'Meta', None))
         if opts.model:
             columns = columns_for_model(opts.model, opts.columns, opts.exclude, opts.labels,
-                                        opts.processors, opts.unsortable_columns, opts.hidden_columns)
+                                        opts.processors, opts.unsortable_columns, opts.hidden_columns,
+                                        opts.columns_attrs)
             none_model_columns = [k for k, v in six.iteritems(columns) if not v]
             missing_columns = set(none_model_columns) - set(declared_columns.keys())
 
             for name, column in declared_columns.items():
                 column.name = name
+                column.extra_attrs = opts.columns_attrs.get(name, {}) if isinstance(opts.columns_attrs, dict) else None
+
                 # if not column.sources:
                 #     column.sources = [name]
                 if not column.label:
