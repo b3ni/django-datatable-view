@@ -9,6 +9,11 @@ try:
 except ImportError:
     pass
 
+try:
+    from django.forms.utils import flatatt
+except ImportError:
+    from django.forms.util import flatatt
+
 from django.db.models.fields import FieldDoesNotExist
 from django.template.loader import render_to_string
 from django.db.models import QuerySet
@@ -148,6 +153,8 @@ class DatatableOptions(object):
         # Mutable by the request
         self.ordering = getattr(options, 'ordering', None)  # override to Model._meta.ordering
         self.page_length = getattr(options, 'page_length', 25)  # length of a single result page
+
+        self.table_attrs = getattr(options, 'table_attrs', None)
 
 
 default_options = DatatableOptions()
@@ -292,6 +299,8 @@ class Datatable(six.with_metaclass(DatatableMetaclass)):
 
         for name in self.config['hidden_columns']:
             self.columns[name].visible = False
+
+        self.config['table_attrs'] = flatatt(self.config['table_attrs']) if self.config['table_attrs'] else ''
 
         self._configured = True
 
@@ -919,6 +928,7 @@ class Datatable(six.with_metaclass(DatatableMetaclass)):
             'datatable': self,
             'columns': self.columns.values(),
         }
+
         return render_to_string(self.config['structure_template'], context)
 
     def __iter__(self):
